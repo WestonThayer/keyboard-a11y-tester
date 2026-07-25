@@ -189,7 +189,14 @@ export function tmpOutDir() {
 // caller's rmSync fully removes, rather than a deep tree under an orphan parent.
 export function deepOutDir() {
   const prefix = path.join(os.tmpdir(), 'katest-');
-  const tail = '/xxxxxxxxxxxx/session-desktop/control.sock'; // longest realistic session path suffix
+  // fixtureUrl() yields a file:// URL, which has no hostname -- synthCase()
+  // (runner.mjs) turns that into an empty case id, and path.join() drops the
+  // resulting empty segment, so the real suffix has no <case-id> component.
+  // Assuming one here (as an earlier version of this helper did) undercounts
+  // the real path by ~13 bytes, which was enough to fit under Linux's 108-byte
+  // limit while still overflowing macOS's 104 -- passing on macOS but not
+  // reproducing the overflow on Linux at all.
+  const tail = '/session-desktop/control.sock'; // longest realistic session path suffix
   const target = 120; // comfortably past both 104 (macOS) and 108 (Linux)
   const padLen = Math.max(1, target - Buffer.byteLength(prefix) - tail.length - 6 /* mkdtemp suffix */);
   return fs.mkdtempSync(prefix + 'p'.repeat(padLen));
